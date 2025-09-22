@@ -134,7 +134,7 @@ $$
 trong đó:
 
 - $\mathcal{L}_{adv}$: tổng adversarial losses của cả hai chiều.
-- $\mathcal{L}_{cycle}$: như ở trên, dùng $L_\theta$.
+- $\mathcal{L}_{cycle}$: như ở trên, dùng $L_\theta$ .
 - $\mathcal{L}_{contrast}$: tổng contrastive loss trên các block tần số.
 - $\mathcal{L}_{identity}$ (tuỳ chọn): nếu đưa ảnh thuộc miền đích vào generator thì output ≈ input, giúp giữ màu sắc và tránh thay đổi không cần thiết.
 
