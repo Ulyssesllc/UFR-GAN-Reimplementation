@@ -230,48 +230,48 @@ for step in range(num_steps):
 ```mermaid
 flowchart LR
 	%% LQ path
-	subgraph LQ_Path[Path from LQ Domain]
+	subgraph LQ_Path
 		direction LR
 		LQ[Input LQ image]
-		G1[G_L2H (Restormer)]
+		G1[G_L2H Restormer]
 		fakeH[fake_H]
-		DH[Discriminator DH (PatchGAN)]
+		DH[Discriminator DH PatchGAN]
 		LQ --> G1 --> fakeH --> DH
 	end
 
 	%% HQ path
-	subgraph HQ_Path[Path from HQ Domain]
+	subgraph HQ_Path
 		direction LR
 		HQ[Input HQ image]
-		G2[G_H2L (Restormer)]
+		G2[G_H2L Restormer]
 		fakeL[fake_L]
-		DL[Discriminator DL (PatchGAN)]
+		DL[Discriminator DL PatchGAN]
 		HQ --> G2 --> fakeL --> DL
 	end
 
-	%% Reconstruction (Cycle paths)
-	fakeH -- G_H2L --> recL[rec_L]
-	fakeL -- G_L2H --> recH[rec_H]
+	%% Reconstruction (Cycle)
+	fakeH -->|G_H2L| recL[rec_L]
+	fakeL -->|G_L2H| recH[rec_H]
 
-	%% Frequency-guided contrastive module
+	%% Frequency contrastive module
 	subgraph Freq[Frequency Contrastive Module]
 		direction TB
-		F1[FFT → Binarize → Central Crop]
-		B1[Overlapping Blocks → Block-level Features]
+		F1[FFT -> Binarize -> Central Crop]
+		B1[Overlapping Blocks -> Block-level Features]
 		CLoss[L_contrast]
 		F1 --> B1 --> CLoss
 	end
 
-	%% Connections to frequency module (dashed)
+	%% Connections to frequency module
 	LQ -.-> F1
 	HQ -.-> F1
 	fakeH -.-> F1
 	fakeL -.-> F1
 
 	%% Loss aggregation
-	AdvLoss[L_adv (from DH & DL)]
-	CycleLoss[L_cycle with L_θ]
-	IdentityLoss[L_identity (optional)]
+	AdvLoss[L_adv from DH & DL]
+	CycleLoss[L_cycle with L_theta]
+	IdentityLoss[L_identity optional]
 	Total[Total Loss]
 
 	DH --> AdvLoss
@@ -282,9 +282,6 @@ flowchart LR
 	AdvLoss --> Total
 	CycleLoss --> Total
 	IdentityLoss --> Total
-
-	%% Notes
-	classDef dashed stroke-dasharray: 5 5;
 ```
 
 (Trong đó contrastive module kết nối với cả fake & real images qua FFT/block-level features.)
