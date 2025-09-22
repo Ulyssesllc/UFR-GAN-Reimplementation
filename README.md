@@ -133,10 +133,10 @@ $$
 
 trong đó:
 
-- \(\mathcal{L}_{adv}\): tổng adversarial losses của cả hai chiều.
-- \(\mathcal{L}_{cycle}\): như ở trên (dùng \(L_\theta\)).
-- \(\mathcal{L}_{contrast}\): tổng contrastive loss trên các block tần số.
-- \(\mathcal{L}_{identity}\) (tuỳ chọn): nếu đưa ảnh thuộc miền đích vào generator thì output ≈ input, giúp giữ màu sắc và tránh thay đổi không cần thiết.
+- $\mathcal{L}_{adv}$: tổng adversarial losses của cả hai chiều.
+- $\mathcal{L}_{cycle}$: như ở trên (dùng $L_\theta$).
+- $\mathcal{L}_{contrast}$: tổng contrastive loss trên các block tần số.
+- $\mathcal{L}_{identity}$ (tuỳ chọn): nếu đưa ảnh thuộc miền đích vào generator thì output ≈ input, giúp giữ màu sắc và tránh thay đổi không cần thiết.
 
 ---
 
@@ -151,34 +151,55 @@ trong đó:
 
 ### Pseudo-code (mô tả tuần tự cho 1 batch)
 
-```
-for each training iteration:
-		sample batch_L from domain L (LQ)
-		sample batch_H from domain H (HQ)
+```python
+# Pseudo-code for one training iteration (Python-like)
+for step in range(num_steps):
+	# Sample batches
+	batch_L = sample_batch(domain="L")  # LQ
+	batch_H = sample_batch(domain="H")  # HQ
 
-		# Forward pass generators
-		fake_H = G_L2H(batch_L)
-		rec_L   = G_H2L(fake_H)            # L -> H -> L (reconstruction)
-		fake_L = G_H2L(batch_H)
-		rec_H   = G_L2H(fake_L)            # H -> L -> H
+	# Forward pass generators
+	fake_H = G_L2H(batch_L)
+	rec_L = G_H2L(fake_H)  # L -> H -> L (reconstruction)
+	fake_L = G_H2L(batch_H)
+	rec_H = G_L2H(fake_L)  # H -> L -> H
 
-		# Compute L_theta recon losses
-		L_cycle = lambda_cycle * ( L_theta(rec_L, batch_L) + L_theta(rec_H, batch_H) )
+	# Cycle-consistency with combined per-image loss L_theta
+	L_cycle = lambda_cycle * (
+		L_theta(rec_L, batch_L) + L_theta(rec_H, batch_H)
+	)
 
-		# Compute adversarial losses for discriminators
-		update D_H to classify real_H vs fake_H  # DL/DH updates (standard)
-		update D_L to classify real_L vs fake_L
+	# Update discriminators (standard GAN)
+	D_H_loss = update_discriminator(D_H, real=batch_H, fake=fake_H.detach())
+	D_L_loss = update_discriminator(D_L, real=batch_L, fake=fake_L.detach())
 
-		# Frequency contrastive loss
-		#  - compute FFT features for blocks of fake / real images
-		#  - compute L_contrast over anchors/positives/negatives
-		L_contrast = compute_frequency_contrastive(...)
+	# Frequency contrastive loss
+	# - compute FFT features for blocks of fake/real images
+	# - compute L_contrast over anchors/positives/negatives
+	L_contrast = compute_frequency_contrastive(fake_H, fake_L, batch_H, batch_L)
 
-		# Total generator loss
-		loss_G = adv_loss_generators + L_cycle + lambda_contrast * L_contrast + lambda_id * L_identity
+	# Adversarial generator loss (from both discriminators)
+	adv_loss_generators = (
+		generator_adv_loss(D_H, fake_H) + generator_adv_loss(D_L, fake_L)
+	)
 
-		# Backprop update generators (Adam, lr=2e-4)
-		# Scheduler step per epoch / milestones
+	# Optional identity loss
+	L_identity = identity_loss(G_L2H, batch_H) + identity_loss(G_H2L, batch_L)
+
+	# Total generator loss
+	loss_G = (
+		adv_loss_generators
+		+ L_cycle
+		+ lambda_contrast * L_contrast
+		+ lambda_id * L_identity
+	)
+
+	# Backprop update generators (Adam, lr=2e-4)
+	optimizer_G.zero_grad()
+	loss_G.backward()
+	optimizer_G.step()
+
+	# Scheduler step per epoch / milestones (handled outside this loop as needed)
 ```
 
 ### Freeze / unfreeze discriminator (chiến lược ổn định)
@@ -206,19 +227,64 @@ for each training iteration:
 
 ## 3.6 Biểu diễn pipeline (sơ đồ luồng chi tiết)
 
-```
-[Input LQ image] ----> G_L2H (Restormer) ----> fake_H  ---> DH (discriminator)  --\
-		 |                                                                                 \
-		 |                                                                                  +--> adversarial loss (DH)
-		 +--> (FFT → binarize → crop → overlapping blocks) --> feature bank --> contrastive loss
-																																											 /
-[Input HQ image] ----> G_H2L (Restormer) ----> fake_L  ---> DL (discriminator)  --/
+```mermaid
+flowchart LR
+	%% LQ path
+	subgraph LQ_Path[Path from LQ Domain]
+		direction LR
+		LQ[Input LQ image]
+		G1[G_L2H (Restormer)]
+		fakeH[fake_H]
+		DH[Discriminator DH (PatchGAN)]
+		LQ --> G1 --> fakeH --> DH
+	end
 
-Reconstruction paths:
-fake_H --G_H2L--> rec_L   (compare rec_L with input L via L_theta)
-fake_L --G_L2H--> rec_H   (compare rec_H with input H via L_theta)
+	%% HQ path
+	subgraph HQ_Path[Path from HQ Domain]
+		direction LR
+		HQ[Input HQ image]
+		G2[G_H2L (Restormer)]
+		fakeL[fake_L]
+		DL[Discriminator DL (PatchGAN)]
+		HQ --> G2 --> fakeL --> DL
+	end
 
-Total loss = adversarial (both sides) + λ_cycle * L_cycle (with Lθ) + λ_contrast * L_contrast + optional identity loss
+	%% Reconstruction (Cycle paths)
+	fakeH -- G_H2L --> recL[rec_L]
+	fakeL -- G_L2H --> recH[rec_H]
+
+	%% Frequency-guided contrastive module
+	subgraph Freq[Frequency Contrastive Module]
+		direction TB
+		F1[FFT → Binarize → Central Crop]
+		B1[Overlapping Blocks → Block-level Features]
+		CLoss[L_contrast]
+		F1 --> B1 --> CLoss
+	end
+
+	%% Connections to frequency module (dashed)
+	LQ -.-> F1
+	HQ -.-> F1
+	fakeH -.-> F1
+	fakeL -.-> F1
+
+	%% Loss aggregation
+	AdvLoss[L_adv (from DH & DL)]
+	CycleLoss[L_cycle with L_θ]
+	IdentityLoss[L_identity (optional)]
+	Total[Total Loss]
+
+	DH --> AdvLoss
+	DL --> AdvLoss
+	recL --> CycleLoss
+	recH --> CycleLoss
+	CLoss --> Total
+	AdvLoss --> Total
+	CycleLoss --> Total
+	IdentityLoss --> Total
+
+	%% Notes
+	classDef dashed stroke-dasharray: 5 5;
 ```
 
 (Trong đó contrastive module kết nối với cả fake & real images qua FFT/block-level features.)
