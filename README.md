@@ -107,7 +107,8 @@ $$
 	3. Dùng hàm đo similarity (cosine) và softmax với temperature τ để định nghĩa loss theo dạng NT-Xent-like:
 
 $$
-L_{contrast}(q, q^+, \{q^-_n\}) = -\log \frac{\exp(\operatorname{sim}(q,q^+)/\tau)}{\exp(\operatorname{sim}(q,q^+)/\tau) + \sum_{n=1}^N \exp(\operatorname{sim}(q,q^-_n)/\tau)}
+L_{contrast}(q, q^+, \{q^-_n\}) = -\log 
+\frac{\exp(\mathrm{sim}(q, q^+)/\tau)}{\exp(\mathrm{sim}(q, q^+)/\tau) + \sum_{n=1}^N \exp(\mathrm{sim}(q, q^-_n)/\tau)}
 $$
 
 (trình bày công thức tương tự như trong bài).
