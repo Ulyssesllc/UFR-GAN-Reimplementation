@@ -67,12 +67,12 @@ Tại sao dùng Restormer cho generator?
 Mục tiêu tổng hợp: kết hợp các thành phần loss để vừa:
 
 - Giữ tính thực (adversarial),
-- Giữ chi tiết hình thái + cấu trúc (cycle + Lθ),
+- Giữ chi tiết hình thái + cấu trúc (cycle + $L_\theta$),
 - Khuyến khích phân tách các thành phần suy giảm trong miền tần số (frequency contrastive).
 
 ---
 
-### 3.3.2 Combined per-image loss L_θ — thành phần của cycle
+### 3.3.2 Combined per-image loss $L_\theta$ — thành phần của cycle
 
 Bài báo định nghĩa một CombinedLoss L_θ dùng để so sánh ảnh tái tạo với ảnh gốc; công thức dạng tổng hợp:
 
@@ -80,14 +80,14 @@ $$
 L_\theta(x, y) = \lambda_{\ell1}\, L_{\ell1}(x,y) + \lambda_{\text{mse}}\, L_{\text{mse}}(x,y) + \lambda_{\text{perc}}\, L_{\text{perc}}(x,y) + \lambda_{\text{edge}}\, L_{\text{edge}}(x,y) + \lambda_{\text{ssim}}\, L_{\text{ssim}}(x,y)
 $$
 
-- Lₗ1: L1 pixel-wise — giữ chi tiết cạnh, ít nhạy outlier hơn MSE.
-- L_mse: MSE — ổn định về năng lượng sai số tổng thể.
-- L_perc: Perceptual loss — đo khoảng cách trong không gian đặc trưng của mạng pretrained (thông thường VGG) để bắt perceptual similarity (giữ cấu trúc nội dung).
-- L_edge: Edge loss — so sánh bản đồ gradient (Sobel/Scharr) để thúc ép khôi phục cạnh sắc nét.
-- L_ssim: SSIM loss — khuyến khích giữ cấu trúc/độ tương đồng cấu trúc từng vùng.
-- Hệ số λ_* là siêu tham số cần tinh chỉnh cho cân bằng giữa các mục tiêu.
+- $L_{\ell 1}$: L1 pixel-wise — giữ chi tiết cạnh, ít nhạy outlier hơn MSE.
+- $L_{\text{mse}}$: MSE — ổn định về năng lượng sai số tổng thể.
+- $L_{\text{perc}}$: Perceptual loss — đo khoảng cách trong không gian đặc trưng của mạng pretrained (thông thường VGG) để bắt perceptual similarity (giữ cấu trúc nội dung).
+- $L_{\text{edge}}$: Edge loss — so sánh bản đồ gradient (Sobel/Scharr) để thúc ép khôi phục cạnh sắc nét.
+- $L_{\text{ssim}}$: SSIM loss — khuyến khích giữ cấu trúc/độ tương đồng cấu trúc từng vùng.
+- Hệ số $\lambda_*$ là siêu tham số cần tinh chỉnh cho cân bằng giữa các mục tiêu.
 
-Giải thích vì sao gộp Lθ vào cycle: khi tính cycle-consistency, thay vì chỉ dùng L1/MSE truyền thống, bài báo đưa Lθ vào để buộc tái tạo lại phải tốt ở nhiều mặt (perceptual/edge/SSIM), làm cho quá trình “L → G → H → G → L” bảo toàn cả cấu trúc và chi tiết. Công thức cycle trong bài là:
+Giải thích vì sao gộp $L_\theta$ vào cycle: khi tính cycle-consistency, thay vì chỉ dùng L1/MSE truyền thống, bài báo đưa $L_\theta$ vào để buộc tái tạo lại phải tốt ở nhiều mặt (perceptual/edge/SSIM), làm cho quá trình “L → G → H → G → L” bảo toàn cả cấu trúc và chi tiết. Công thức cycle trong bài là:
 
 $$
 L_{cycle} = \lambda_{cycle}\big[ L_\theta(G_{H2L}(G_{L2H}(L)),\, L) + L_\theta(G_{L2H}(G_{H2L}(H)),\, H) \big]
@@ -97,7 +97,7 @@ $$
 
 ---
 
-### 3.3.3 Frequency contrastive loss (L_contrast)
+### 3.3.3 Frequency contrastive loss ($L_{contrast}$)
 
 - Mục tiêu: trong miền tần số, đưa các biểu diễn tần số “gần nhau” khi chúng thuộc cùng loại (positive pairs), và đẩy xa các biểu diễn khác (negative pairs). Điều này giúp disentangle overlapping degradations: ví dụ mưa (có signature tần số khác) sẽ tách khỏi blur hoặc haze.
 - Quy trình tóm tắt:
@@ -219,7 +219,7 @@ for step in range(num_steps):
 
 - Normalization: instance normalization trong discriminator (theo paper). Generator Restormer có thể dùng LayerNorm/TRT variants theo nguyên bản Restormer.
 - Perceptual loss: nếu dùng VGG feature, cố định weights pre-trained ImageNet; chọn các layer conv2_2/conv3_3... tuỳ mục tiêu độ chi tiết.
-- Khi làm contrastive trên tần số: chuẩn hoá vector (L2) trước khi tính cosine; dùng temperature τ ~ 0.07–0.2 (giá trị thường dùng trong contrastive literature) — tune theo batch size.
+- Khi làm contrastive trên tần số: chuẩn hoá vector (L2) trước khi tính cosine; dùng temperature $\tau \in [0.07, 0.2]$ (giá trị thường dùng trong contrastive literature) — tune theo batch size.
 - Batch size: trade-off GPU memory vs. chất lượng contrastive (batch lớn giúp negative pool hơn). Nếu batch nhỏ, dùng memory bank hoặc xây negative từ nhiều patch trong ảnh.
 - Ablation: bài báo cho thấy bổ sung “frequency-guided contrastive learning” cải thiện PSNR/SSIM đáng kể (ví dụ tăng từ ~23→~26.87 PSNR trong điều kiện đa suy giảm).
 
@@ -290,7 +290,7 @@ flowchart LR
 
 ## 3.7 Tóm tắt cuối: điểm mạnh / điểm cần chú ý
 
-- Strengths: Restormer giúp khôi phục chi tiết tốt ở ảnh độ phân giải cao; frequency-contrastive giúp disentangle artefacts chồng lấn; cycle + Lθ giúp bảo toàn cấu trúc và perceptual quality. Kết quả thực nghiệm của tác giả cho thấy PSNR/SSIM vượt trội trên tập hợp multi-degradation.
+- Strengths: Restormer giúp khôi phục chi tiết tốt ở ảnh độ phân giải cao; frequency-contrastive giúp disentangle artefacts chồng lấn; cycle + $L_\theta$ giúp bảo toàn cấu trúc và perceptual quality. Kết quả thực nghiệm của tác giả cho thấy PSNR/SSIM vượt trội trên tập hợp multi-degradation.
 - Cần chú ý: huấn luyện GAN + transformer có thể nhạy — cần tuning lr, balance update D/G, chọn temperature/negatives cho contrastive, và kiểm soát bộ nhớ (batch size, block size).
 
 ---
