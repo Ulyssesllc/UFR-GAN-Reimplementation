@@ -74,7 +74,7 @@ Mục tiêu tổng hợp: kết hợp các thành phần loss để vừa:
 
 ### 3.3.2 Combined per-image loss $L_\theta$ — thành phần của cycle
 
-Bài báo định nghĩa một CombinedLoss L_θ dùng để so sánh ảnh tái tạo với ảnh gốc; công thức dạng tổng hợp:
+Bài báo định nghĩa một CombinedLoss $L_\theta$ dùng để so sánh ảnh tái tạo với ảnh gốc; công thức dạng tổng hợp:
 
 $$
 L_\theta(x, y) = \lambda_{\ell1}\, L_{\ell1}(x,y) + \lambda_{\text{mse}}\, L_{\text{mse}}(x,y) + \lambda_{\text{perc}}\, L_{\text{perc}}(x,y) + \lambda_{\text{edge}}\, L_{\text{edge}}(x,y) + \lambda_{\text{ssim}}\, L_{\text{ssim}}(x,y)
@@ -103,8 +103,8 @@ $$
 - Quy trình tóm tắt:
 
 	1. Tạo đặc trưng tần số cho các block (xem 3.2.3).
-	2. Lấy một anchor q, một hoặc nhiều positive q^+ (ví dụ: block tương ứng đến từ ảnh mục tiêu/đối tượng mong muốn hoặc sample gần giống), và một tập negatives {q^-_n}.
-	3. Dùng hàm đo similarity (cosine) và softmax với temperature τ để định nghĩa loss theo dạng NT-Xent-like:
+	2. Lấy một anchor $q$, một hoặc nhiều positive $q^+$ (ví dụ: block tương ứng đến từ ảnh mục tiêu/đối tượng mong muốn hoặc sample gần giống), và một tập negatives $\{q_n^-\}$.
+	3. Dùng hàm đo similarity (cosine) và softmax với temperature $\tau$ để định nghĩa loss theo dạng NT-Xent-like:
 
 $$
 L_{contrast}(q, q^+, \{q^-_n\}) = -\log 
@@ -134,7 +134,7 @@ $$
 trong đó:
 
 - $\mathcal{L}_{adv}$: tổng adversarial losses của cả hai chiều.
-- $\mathcal{L}_{cycle}$: như ở trên (dùng $L_\theta$).
+- $\mathcal{L}_{cycle}$: như ở trên, dùng $L_\theta$.
 - $\mathcal{L}_{contrast}$: tổng contrastive loss trên các block tần số.
 - $\mathcal{L}_{identity}$ (tuỳ chọn): nếu đưa ảnh thuộc miền đích vào generator thì output ≈ input, giúp giữ màu sắc và tránh thay đổi không cần thiết.
 
