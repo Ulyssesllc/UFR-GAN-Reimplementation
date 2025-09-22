@@ -134,7 +134,7 @@ $$
 trong đó:
 
 - $\mathcal{L}_{adv}$: tổng adversarial losses của cả hai chiều.
-- ${\mathcal{L}_{cycle}}$: như ở trên, dùng ${L_\theta}$ .
+- $\mathcal{L}_{cycle}$: như ở trên, dùng $L_\theta$.
 - $\mathcal{L}_{contrast}$: tổng contrastive loss trên các block tần số.
 - $\mathcal{L}_{identity}$ (tuỳ chọn): nếu đưa ảnh thuộc miền đích vào generator thì output ≈ input, giúp giữ màu sắc và tránh thay đổi không cần thiết.
 
@@ -221,7 +221,7 @@ for step in range(num_steps):
 - Perceptual loss: nếu dùng VGG feature, cố định weights pre-trained ImageNet; chọn các layer conv2_2/conv3_3... tuỳ mục tiêu độ chi tiết.
 - Khi làm contrastive trên tần số: chuẩn hoá vector (L2) trước khi tính cosine; dùng temperature $\tau \in [0.07, 0.2]$ (giá trị thường dùng trong contrastive literature) — tune theo batch size.
 - Batch size: trade-off GPU memory vs. chất lượng contrastive (batch lớn giúp negative pool hơn). Nếu batch nhỏ, dùng memory bank hoặc xây negative từ nhiều patch trong ảnh.
-- Ablation: bài báo cho thấy bổ sung “frequency-guided contrastive learning” cải thiện PSNR/SSIM đáng kể (ví dụ tăng từ ~23→~26.87 PSNR trong điều kiện đa suy giảm).
+- Ablation: bài báo cho thấy bổ sung “frequency-guided contrastive learning” cải thiện PSNR/SSIM đáng kể (ví dụ tăng từ ~23 →~26.87 PSNR trong điều kiện đa suy giảm).
 
 ---
 
